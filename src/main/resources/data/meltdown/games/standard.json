@@ -1,0 +1,8 @@
+{
+  "type": "meltdown:meltdown",
+  "players": {
+    "min": 1,
+    "max": 6,
+    "threshold": 2
+  }
+}

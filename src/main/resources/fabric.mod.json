@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "meltdown",
+  "version": "${version}",
+  "name": "Meltdown",
+  "description": "A Plasmid minigame where you need to protect a reactor from melting down.",
+  "authors": [
+    "SuperCoder79"
+  ],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/meltdown/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "supercoder79.meltdown.Meltdown"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.10.6+build.214",
+    "fabric": "*",
+    "minecraft": "1.16.3"
+  }
+}
