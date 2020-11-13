@@ -31,9 +31,11 @@ import net.minecraft.world.gen.chunk.StructuresConfig;
 public class MdChunkGenerator extends GameChunkGenerator {
 	private final OpenSimplexNoise noise;
 	private final OpenSimplexNoise deltailNoise;
+	private final MdMap map;
 
-	public MdChunkGenerator(MinecraftServer server) {
+	public MdChunkGenerator(MinecraftServer server, MdMap map) {
 		super(createBiomeSource(server, BiomeKeys.PLAINS), new StructuresConfig(Optional.empty(), Collections.emptyMap()));
+		this.map = map;
 		Random random = new Random();
 
 		this.noise = new OpenSimplexNoise(random.nextLong());
@@ -50,7 +52,7 @@ public class MdChunkGenerator extends GameChunkGenerator {
 
 		for (int x = chunkX; x < chunkX + 16; x++) {
 			for (int z = chunkZ; z < chunkZ + 16; z++) {
-				double height = 68 + noise.eval(x / 80.0, z / 80.0) * 3 + deltailNoise.eval(x / 16.0, z / 16.0) * 0.6;
+				double height = 68 + noise.eval(x / 80.0, z / 80.0) * 5 + deltailNoise.eval(x / 16.0, z / 16.0) * 1;
 
 				int genHeight  = (int) height;
 				for (int y = 0; y <= genHeight; y++) {
@@ -58,11 +60,21 @@ public class MdChunkGenerator extends GameChunkGenerator {
 
 					if (y == genHeight) {
 						state = Blocks.GRASS_BLOCK.getDefaultState();
+
+						if ((x >= map.reactorX - 2 && x <= map.reactorX + 2) && (z >= map.reactorZ - 2 && z <= map.reactorZ + 2)) {
+							state = Blocks.IRON_BLOCK.getDefaultState();
+						}
+
+						if (x == map.reactorX && z == map.reactorZ) {
+							state = Blocks.BEDROCK.getDefaultState();
+							world.setBlockState(mutable.set(x, y + 1, z), Blocks.BEACON.getDefaultState(), 3);
+							this.map.reactorY = y + 1; // TODO: this is a really ugly hack
+						}
 					} else if (y > genHeight - 4) {
 						state = Blocks.DIRT.getDefaultState();
 					}
 
-					world.setBlockState(mutable.set(x, y,z), state, 3);
+					world.setBlockState(mutable.set(x, y, z), state, 3);
 				}
 			}
 		}
@@ -84,7 +96,7 @@ public class MdChunkGenerator extends GameChunkGenerator {
 			PoplarTreeGen.INSTANCE.generate(region, mutable.set(x, y, z).toImmutable(), random);
 		}
 
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 7; i++) {
 			int x = chunkX + random.nextInt(16);
 			int z = chunkZ + random.nextInt(16);
 			int y = region.getTopY(Heightmap.Type.WORLD_SURFACE_WG, x, z);
@@ -103,5 +115,9 @@ public class MdChunkGenerator extends GameChunkGenerator {
 
 	@Override
 	public void addStructureReferences(StructureWorldAccess world, StructureAccessor accessor, Chunk chunk) {
+	}
+
+	@Override
+	public void populateEntities(ChunkRegion region) {
 	}
 }

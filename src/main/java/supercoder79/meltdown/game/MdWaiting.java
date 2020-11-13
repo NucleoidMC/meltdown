@@ -30,11 +30,13 @@ public final class MdWaiting {
 	private final GameWorld world;
 	private final MdMap map;
 	private final MdConfig config;
+	private final BubbleWorldConfig worldConfig;
 
-	private MdWaiting(GameWorld world, MdMap map, MdConfig config) {
+	private MdWaiting(GameWorld world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig) {
 		this.world = world;
 		this.map = map;
 		this.config = config;
+		this.worldConfig = worldConfig;
 		this.spawnLogic = new MdSpawnLogic(world, config);
 	}
 
@@ -48,11 +50,11 @@ public final class MdWaiting {
 							.setGenerator(map.chunkGenerator(context.getServer()))
 							.setDefaultGameMode(GameMode.SPECTATOR)
 							.setSpawner(BubbleWorldSpawner.atSurface(0, 0))
-							.setTimeOfDay(6000)
+							.setTimeOfDay(12500)
 							.setDifficulty(Difficulty.NORMAL);
 
 					return context.openWorld(worldConfig).thenApply(gameWorld -> {
-						MdWaiting waiting = new MdWaiting(gameWorld, map, config);
+						MdWaiting waiting = new MdWaiting(gameWorld, map, config, worldConfig);
 
 						return GameWaitingLobby.open(gameWorld, config.playerConfig, game -> {
 							game.setRule(GameRule.CRAFTING, RuleResult.DENY);
@@ -74,7 +76,7 @@ public final class MdWaiting {
 	}
 
 	private StartResult requestStart() {
-		MdActive.open(this.world, this.map, this.config);
+		MdActive.open(this.world, this.map, this.config, this.worldConfig);
 		return StartResult.OK;
 	}
 
