@@ -1,7 +1,10 @@
 package supercoder79.meltdown.game;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -26,6 +29,8 @@ import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
 
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -48,6 +53,10 @@ public class MdActive {
 	private final BubbleWorldConfig worldConfig;
 	private final Set<ServerPlayerEntity> participants;
 	private final MdSpawnLogic spawnLogic;
+
+	private final List<MeltdownZombieEntity> trackedZombies = new ArrayList<>();
+	private final Map<MeltdownZombieEntity, BlockPos> trackedPosition = new HashMap<>();
+	private final List<BlockPos> trackedWalls = new ArrayList<>(); // This'll need to be expanded with wall types at some point
 
 	private int ticks = 0;
 	public boolean isNightTime = false;
@@ -89,7 +98,7 @@ public class MdActive {
 //			game.on(UseItemListener.EVENT, active::onUseItem);
 //
 //			game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
-//			game.on(EntityDeathListener.EVENT, active::onEntityDeath);
+			game.on(EntityDeathListener.EVENT, active::onEntityDeath);
 		});
 	}
 
@@ -126,6 +135,8 @@ public class MdActive {
 
 	private ActionResult onBreak(ServerPlayerEntity player, BlockPos pos) {
 		if (player.getServerWorld().getBlockState(pos).isOf(Blocks.OAK_PLANKS)) {
+			this.trackedWalls.remove(pos);
+
 			return ActionResult.SUCCESS;
 		}
 
@@ -134,10 +145,29 @@ public class MdActive {
 
 	private ActionResult onUseBlock(ServerPlayerEntity player, Hand hand, BlockHitResult hitResult) {
 		if (player.getStackInHand(hand).getItem() == Blocks.OAK_PLANKS.asItem()) {
+			// ugly hack for tall grass
+			BlockPos pos;
+
+			if (this.world.getWorld().getBlockState(hitResult.getBlockPos()).getMaterial().isReplaceable()) {
+				pos = hitResult.getBlockPos();
+			} else {
+				pos = hitResult.getBlockPos().offset(hitResult.getSide());
+			}
+
+			this.trackedWalls.add(pos);
+
 			return ActionResult.PASS;
 		}
 
 		return ActionResult.FAIL;
+	}
+
+	ActionResult onEntityDeath(LivingEntity entity, DamageSource damageSource) {
+		if (entity instanceof MeltdownZombieEntity) {
+			this.trackedZombies.remove(entity);
+		}
+
+		return ActionResult.PASS;
 	}
 
 	private void tick() {
@@ -157,7 +187,7 @@ public class MdActive {
 					double zOffset = Math.sin(theta) * dist;
 					// TODO: atan2 to make sure the zombies don't spawn within a 30 degree radius of players
 
-					int topY = world.getWorld().getTopY(Heightmap.Type.MOTION_BLOCKING, (int) (this.map.reactorX + xOffset), (int) (this.map.reactorZ + zOffset));
+					int topY = this.world.getWorld().getTopY(Heightmap.Type.MOTION_BLOCKING, (int) (this.map.reactorX + xOffset), (int) (this.map.reactorZ + zOffset));
 					BlockPos pos = new BlockPos(this.map.reactorX + xOffset, topY, this.map.reactorZ + zOffset);
 
 					MeltdownZombieEntity zombie = new MeltdownZombieEntity(this.world.getWorld(), this);
@@ -167,6 +197,9 @@ public class MdActive {
 					zombie.setPersistent();
 
 					this.world.getWorld().spawnEntity(zombie);
+
+					this.trackedZombies.add(zombie);
+					this.trackedPosition.put(zombie, pos);
 				}
 			}
 
@@ -186,8 +219,32 @@ public class MdActive {
 					participant.playSound(SoundEvents.ENTITY_WITHER_HURT, SoundCategory.MASTER, 1, 1);
 				}
 			}
+		}
 
+		// Entities break walls every 3 seconds if they don't move.
+		// This should be moved to goals but I hate ai sooooo we're using  with this for now
+		if (this.ticks % 60 == 0) {
+			for (MeltdownZombieEntity zombie : this.trackedZombies) {
+				BlockPos oldPos = this.trackedPosition.get(zombie);
+				BlockPos newPos = zombie.getBlockPos();
 
+				if (oldPos.getSquaredDistance(newPos) <= 4) {
+					for (int x = -1; x <= 1; x++) {
+					    for (int z = -1; z <= 1; z++) {
+							for (int y = -1; y <= 1; y++) {
+								BlockPos local = newPos.add(x, y, z);
+
+								if (this.trackedWalls.contains(local)) {
+									this.world.getWorld().breakBlock(local, false);
+									this.trackedWalls.remove(local);
+								}
+							}
+					    }
+					}
+				}
+
+				this.trackedPosition.put(zombie, newPos);
+			}
 		}
 
 	}
