@@ -27,13 +27,17 @@ import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
@@ -134,10 +138,18 @@ public class MdActive {
 	}
 
 	private ActionResult onBreak(ServerPlayerEntity player, BlockPos pos) {
-		if (player.getServerWorld().getBlockState(pos).isOf(Blocks.OAK_PLANKS)) {
+		ServerWorld world = player.getServerWorld();
+		BlockState state = world.getBlockState(pos);
+
+		if (state.isOf(Blocks.OAK_PLANKS)) {
 			this.trackedWalls.remove(pos);
 
 			return ActionResult.SUCCESS;
+		}
+
+		if (state.isOf(Blocks.OAK_LOG)) {
+			world.breakBlock(pos, false);
+			world.spawnEntity(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(Blocks.OAK_PLANKS, 2)));
 		}
 
 		return ActionResult.FAIL;
