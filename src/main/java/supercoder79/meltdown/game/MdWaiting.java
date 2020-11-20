@@ -50,7 +50,7 @@ public final class MdWaiting {
 							.setGenerator(map.chunkGenerator(context.getServer()))
 							.setDefaultGameMode(GameMode.SPECTATOR)
 							.setSpawner(BubbleWorldSpawner.atSurface(0, 0))
-							.setTimeOfDay(12500)
+							.setTimeOfDay(6000)
 							.setDifficulty(Difficulty.NORMAL);
 
 					return context.openWorld(worldConfig).thenApply(gameWorld -> {

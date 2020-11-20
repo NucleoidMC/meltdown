@@ -62,7 +62,10 @@ public class MdActive {
 	public boolean isNightTime = false;
 
 	// TODO: difficulty scaling
-	public int reactorHealth = 5;
+	public int reactorHealth = 10;
+
+	// tick timers
+	public int reactorInvulnTick = -1;
 
 	private MdActive(GameWorld world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig, Set<ServerPlayerEntity> participants) {
 		this.world = world;
@@ -182,9 +185,9 @@ public class MdActive {
 		this.ticks++;
 
 		// Increase the time
-		this.worldConfig.setTimeOfDay(12500 + ticks);
+		this.worldConfig.setTimeOfDay(6000 + ticks);
 
-		if ((12500 + ticks) > 13000) {
+		if ((6000 + ticks) > 13000) {
 			if (!this.isNightTime) {
 				Random random = new Random();
 				for (int i = 0; i < 16; i++) {
@@ -228,19 +231,24 @@ public class MdActive {
 					entity.kill();
 				}
 
-				this.reactorHealth--;
-				if (this.reactorHealth == 0) {
-					for (ServerPlayerEntity participant : this.participants) {
-						// TODO: game close tick
-						sendMessageFromCommander(participant, "You've failed. Better luck next time.");
-						this.world.close();
-					}
+				if (this.ticks > this.reactorInvulnTick) {
+					this.reactorInvulnTick = this.ticks + 30; // Reactor is safe for the next 1.5 secs
+					
+					this.reactorHealth--;
+					if (this.reactorHealth == 0) {
+						for (ServerPlayerEntity participant : this.participants) {
+							// TODO: game close tick
+							sendMessageFromCommander(participant, "You've failed. Better luck next time.");
+							this.world.close();
+							return;
+						}
 
-				}
-				for (ServerPlayerEntity participant : this.participants) {
-					participant.playSound(SoundEvents.ENTITY_WITHER_HURT, SoundCategory.MASTER, 1, 1);
-					// TODO: bossbar
-					sendMessageFromCommander(participant, "Careful! The reactor only has " + this.reactorHealth + " left!");
+					}
+					for (ServerPlayerEntity participant : this.participants) {
+						participant.playSound(SoundEvents.ENTITY_WITHER_HURT, SoundCategory.MASTER, 1, 1);
+						// TODO: bossbar
+						sendMessageFromCommander(participant, "Careful! The reactor only has " + this.reactorHealth + " health left!");
+					}
 				}
 			}
 		}
