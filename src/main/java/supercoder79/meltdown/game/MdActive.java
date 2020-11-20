@@ -17,10 +17,7 @@ import xyz.nucleoid.plasmid.game.event.GameOpenListener;
 import xyz.nucleoid.plasmid.game.event.GameTickListener;
 import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
 import xyz.nucleoid.plasmid.game.event.UseBlockListener;
-import xyz.nucleoid.plasmid.game.event.UseItemListener;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
@@ -44,7 +41,6 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.GameMode;
@@ -219,7 +215,13 @@ public class MdActive {
 		}
 
 		if (this.ticks % 10 == 0) {
-			List<ZombieEntity> entities = this.world.getWorld().getEntitiesByType(EntityType.ZOMBIE, new Box(this.map.reactorX - 1, this.map.reactorY - 1, this.map.reactorZ - 1, this.map.reactorX + 2, this.map.reactorY + 2, this.map.reactorZ + 2), (t) -> true);
+			List<ZombieEntity> entities = this.world.getWorld().getEntitiesByType(EntityType.ZOMBIE,
+					new Box(this.map.reactorX - 1,
+							this.map.reactorY - 1,
+							this.map.reactorZ - 1,
+							this.map.reactorX + 2,
+							this.map.reactorY + 2,
+							this.map.reactorZ + 2), (t) -> true);
 
 			if (entities.size() > 0) {
 				for (ZombieEntity entity : entities) {
@@ -227,8 +229,18 @@ public class MdActive {
 				}
 
 				this.reactorHealth--;
+				if (this.reactorHealth == 0) {
+					for (ServerPlayerEntity participant : this.participants) {
+						// TODO: game close tick
+						sendMessageFromCommander(participant, "You've failed. Better luck next time.");
+						this.world.close();
+					}
+
+				}
 				for (ServerPlayerEntity participant : this.participants) {
 					participant.playSound(SoundEvents.ENTITY_WITHER_HURT, SoundCategory.MASTER, 1, 1);
+					// TODO: bossbar
+					sendMessageFromCommander(participant, "Careful! The reactor only has " + this.reactorHealth + " left!");
 				}
 			}
 		}
