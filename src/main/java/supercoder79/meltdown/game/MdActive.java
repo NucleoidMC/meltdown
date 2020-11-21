@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import kdotjpg.opensimplex.OpenSimplexNoise;
 import supercoder79.meltdown.entity.MeltdownZombieEntity;
 import supercoder79.meltdown.map.MdMap;
 import xyz.nucleoid.plasmid.game.GameWorld;
@@ -57,15 +58,17 @@ public class MdActive {
 	private final List<MeltdownZombieEntity> trackedZombies = new ArrayList<>();
 	private final Map<MeltdownZombieEntity, BlockPos> trackedPosition = new HashMap<>();
 	private final List<BlockPos> trackedWalls = new ArrayList<>(); // This'll need to be expanded with wall types at some point
+	private final OpenSimplexNoise difficultyNoise;
 
 	private int ticks = 0;
 	public boolean isNightTime = false;
 
-	// TODO: difficulty scaling
+	// TODO: player count based difficulty scaling
 	public int reactorHealth = 10;
 
 	// tick timers
 	public int reactorInvulnTick = -1;
+	public int waveNextTick = -1;
 
 	private MdActive(GameWorld world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig, Set<ServerPlayerEntity> participants) {
 		this.world = world;
@@ -75,6 +78,8 @@ public class MdActive {
 		this.participants = participants;
 
 		this.spawnLogic = new MdSpawnLogic(world, config);
+
+		this.difficultyNoise = new OpenSimplexNoise(world.getWorld().getRandom().nextLong());
 	}
 
 	public static void open(GameWorld world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig) {
@@ -95,12 +100,8 @@ public class MdActive {
 
 			game.on(BreakBlockListener.EVENT, active::onBreak);
 			game.on(UseBlockListener.EVENT, active::onUseBlock);
-//			game.on(PlayerRemoveListener.EVENT, active::removePlayer);
-//
+
 			game.on(GameTickListener.EVENT, active::tick);
-//			game.on(UseItemListener.EVENT, active::onUseItem);
-//
-//			game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
 			game.on(EntityDeathListener.EVENT, active::onEntityDeath);
 		});
 	}
@@ -113,7 +114,7 @@ public class MdActive {
 			player.inventory.insertStack(1, ItemStackBuilder.of(Items.OAK_PLANKS).setCount(32).build());
 
 			sendMessageFromCommander(player, "Welcome Generals. Your mission today is simple: stop the meltdown.");
-			sendMessageFromCommander(player, "You have a few minutes to gather supplies and build defenses, but then the monsters will descend upon you.");
+			sendMessageFromCommander(player, "You have a few minutes to gather supplies and build defenses around the reactor, but then the monsters will descend upon you.");
 			sendMessageFromCommander(player, "Don't let them win. Good luck.");
 		}
 	}
@@ -146,6 +147,7 @@ public class MdActive {
 			return ActionResult.SUCCESS;
 		}
 
+		// TODO: make it so players can chop down whole trees
 		if (state.isOf(Blocks.OAK_LOG)) {
 			world.breakBlock(pos, false);
 			world.spawnEntity(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(Blocks.OAK_PLANKS, 2)));
@@ -181,6 +183,7 @@ public class MdActive {
 		return ActionResult.PASS;
 	}
 
+	// TODO: This should probably be split off into logic classes as it's already a mess and will only get worse
 	private void tick() {
 		this.ticks++;
 
@@ -189,8 +192,25 @@ public class MdActive {
 
 		if ((6000 + ticks) > 13000) {
 			if (!this.isNightTime) {
+				for (ServerPlayerEntity participant : this.participants) {
+					sendMessageFromCommander(participant, "Night has fallen! Be careful...");
+				}
+
+				this.isNightTime = true;
+			}
+		}
+
+		// Nightime ticking
+		if (this.isNightTime) {
+			if (this.ticks > this.waveNextTick) {
 				Random random = new Random();
-				for (int i = 0; i < 16; i++) {
+				// Waves can be 15 to 25 seconds apart
+				this.waveNextTick = this.ticks + (int) (this.difficultyNoise.eval(this.ticks / 4000.0, 0) * 100 + 400);
+
+				// TODO: scale based on existing zombie count
+				int zombieCount = random.nextInt(6) + 4;
+				for (int i = 0; i < zombieCount; i++) {
+					// TODO: spawn some zombies around the reactor, spawn some around players
 					// Spawn zombies around the reactor
 					double theta = random.nextDouble() * Math.PI * 2;
 					double dist = random.nextDouble() * 16 + 16;
@@ -213,11 +233,10 @@ public class MdActive {
 					this.trackedPosition.put(zombie, pos);
 				}
 			}
-
-			this.isNightTime = true;
 		}
 
 		if (this.ticks % 10 == 0) {
+			// The +2 offset here is needed trust me pls
 			List<ZombieEntity> entities = this.world.getWorld().getEntitiesByType(EntityType.ZOMBIE,
 					new Box(this.map.reactorX - 1,
 							this.map.reactorY - 1,
@@ -226,6 +245,7 @@ public class MdActive {
 							this.map.reactorY + 2,
 							this.map.reactorZ + 2), (t) -> true);
 
+			// Instakill the zombies attacking and lower health
 			if (entities.size() > 0) {
 				for (ZombieEntity entity : entities) {
 					entity.kill();
@@ -233,7 +253,7 @@ public class MdActive {
 
 				if (this.ticks > this.reactorInvulnTick) {
 					this.reactorInvulnTick = this.ticks + 30; // Reactor is safe for the next 1.5 secs
-					
+
 					this.reactorHealth--;
 					if (this.reactorHealth == 0) {
 						for (ServerPlayerEntity participant : this.participants) {
@@ -247,6 +267,7 @@ public class MdActive {
 					for (ServerPlayerEntity participant : this.participants) {
 						participant.playSound(SoundEvents.ENTITY_WITHER_HURT, SoundCategory.MASTER, 1, 1);
 						// TODO: bossbar
+						// TODO: better damage messages, but avoid being annoying like ray
 						sendMessageFromCommander(participant, "Careful! The reactor only has " + this.reactorHealth + " health left!");
 					}
 				}

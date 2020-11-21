@@ -52,6 +52,7 @@ public class MdChunkGenerator extends GameChunkGenerator {
 
 		for (int x = chunkX; x < chunkX + 16; x++) {
 			for (int z = chunkZ; z < chunkZ + 16; z++) {
+				// TODO: prettier map gen
 				double height = 68 + noise.eval(x / 80.0, z / 80.0) * 5 + deltailNoise.eval(x / 16.0, z / 16.0) * 1;
 
 				int genHeight  = (int) height;
@@ -88,6 +89,7 @@ public class MdChunkGenerator extends GameChunkGenerator {
 		int chunkX = region.getCenterChunkX() * 16;
 		int chunkZ = region.getCenterChunkZ() * 16;
 
+		// TODO: biomes, maybe? could be part of the config
 		for (int i = 0; i < (random.nextInt(3) == 0 ? 1 : 0); i++) {
 			int x = chunkX + random.nextInt(16);
 			int z = chunkZ + random.nextInt(16);
