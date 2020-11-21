@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Random;
 
 import kdotjpg.opensimplex.OpenSimplexNoise;
+import supercoder79.meltdown.map.gen.StraightPoplarTreeGen;
 import xyz.nucleoid.plasmid.game.gen.feature.GrassGen;
 import xyz.nucleoid.plasmid.game.gen.feature.tree.PoplarTreeGen;
 import xyz.nucleoid.plasmid.game.world.generator.GameChunkGenerator;
@@ -95,7 +96,7 @@ public class MdChunkGenerator extends GameChunkGenerator {
 			int z = chunkZ + random.nextInt(16);
 			int y = region.getTopY(Heightmap.Type.WORLD_SURFACE_WG, x, z);
 
-			PoplarTreeGen.INSTANCE.generate(region, mutable.set(x, y, z).toImmutable(), random);
+			StraightPoplarTreeGen.INSTANCE.generate(region, mutable.set(x, y, z).toImmutable(), random);
 		}
 
 		for (int i = 0; i < 7; i++) {

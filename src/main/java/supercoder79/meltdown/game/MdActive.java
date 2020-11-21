@@ -147,10 +147,21 @@ public class MdActive {
 			return ActionResult.SUCCESS;
 		}
 
-		// TODO: make it so players can chop down whole trees
+		// Tree chopping
 		if (state.isOf(Blocks.OAK_LOG)) {
-			world.breakBlock(pos, false);
-			world.spawnEntity(new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), new ItemStack(Blocks.OAK_PLANKS, 2)));
+			// Trees are max 12 blocks tall by default
+			for (int y = 0; y < 12; y++) {
+				BlockPos local = pos.up(y);
+				BlockState localState = world.getBlockState(local);
+
+				if (!localState.isOf(Blocks.OAK_LOG)) {
+					break;
+				}
+
+				world.breakBlock(local, false);
+				world.spawnEntity(new ItemEntity(world, local.getX(), local.getY(), local.getZ(), new ItemStack(Blocks.OAK_PLANKS, 1)));
+			}
+
 		}
 
 		return ActionResult.FAIL;
