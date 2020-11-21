@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "supercoder79.meltdown.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MixinLeavesBlock"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

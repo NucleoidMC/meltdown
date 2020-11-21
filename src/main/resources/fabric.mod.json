@@ -16,6 +16,9 @@
       "supercoder79.meltdown.Meltdown"
     ]
   },
+  "mixins": [
+    "meltdown.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.10.6+build.214",
     "fabric": "*",
