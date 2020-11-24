@@ -2,7 +2,7 @@ package supercoder79.meltdown.game;
 
 import java.util.Random;
 
-import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.GameSpace;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -17,11 +17,11 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.Heightmap;
 
 public final class MdSpawnLogic {
-    private final GameWorld world;
+    private final GameSpace space;
     private final MdConfig config;
 
-    public MdSpawnLogic(GameWorld world, MdConfig config) {
-        this.world = world;
+    public MdSpawnLogic(GameSpace space, MdConfig config) {
+        this.space = space;
         this.config = config;
     }
 
@@ -39,9 +39,9 @@ public final class MdSpawnLogic {
     }
 
     public void spawnPlayer(ServerPlayerEntity player) {
-        ServerWorld world = this.world.getWorld();
+        ServerWorld world = this.space.getWorld();
 
-        BlockPos pos = findSurfaceAround(Vec3d.ZERO, this.world.getWorld(), this.config);
+        BlockPos pos = findSurfaceAround(Vec3d.ZERO, this.space.getWorld(), this.config);
         ChunkPos chunkPos = new ChunkPos(pos);
         world.getChunkManager().addTicket(ChunkTicketType.POST_TELEPORT, chunkPos, 1, player.getEntityId());
 

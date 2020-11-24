@@ -7,7 +7,7 @@ import supercoder79.meltdown.game.MdConfig;
 import net.minecraft.util.Util;
 
 public final class MdMapGenerator {
-    public CompletableFuture<MdMap> create(MdConfig config) {
-        return CompletableFuture.supplyAsync(() -> new MdMap(config), Util.getMainWorkerExecutor());
+    public MdMap create(MdConfig config) {
+        return new MdMap(config);
     }
 }

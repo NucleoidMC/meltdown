@@ -1,5 +1,6 @@
 {
   "type": "meltdown:meltdown",
+  "name": "Meltdown",
   "players": {
     "min": 1,
     "max": 6,

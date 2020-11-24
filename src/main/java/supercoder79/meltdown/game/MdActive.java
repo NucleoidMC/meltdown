@@ -11,7 +11,8 @@ import java.util.Set;
 import kdotjpg.opensimplex.OpenSimplexNoise;
 import supercoder79.meltdown.entity.MeltdownZombieEntity;
 import supercoder79.meltdown.map.MdMap;
-import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.fantasy.BubbleWorldConfig;
+import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.event.BreakBlockListener;
 import xyz.nucleoid.plasmid.game.event.EntityDeathListener;
 import xyz.nucleoid.plasmid.game.event.GameOpenListener;
@@ -20,10 +21,10 @@ import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
 import xyz.nucleoid.plasmid.game.event.UseBlockListener;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
-import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -48,11 +49,11 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.Heightmap;
 
 public class MdActive {
-	public final GameWorld world;
+	public final GameSpace world;
 	public final MdMap map;
 	public final MdConfig config;
 	private final BubbleWorldConfig worldConfig;
-	private final Set<ServerPlayerEntity> participants;
+	private final PlayerSet participants;
 	private final MdSpawnLogic spawnLogic;
 
 	private final List<MeltdownZombieEntity> trackedZombies = new ArrayList<>();
@@ -70,7 +71,7 @@ public class MdActive {
 	public int reactorInvulnTick = -1;
 	public int waveNextTick = -1;
 
-	private MdActive(GameWorld world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig, Set<ServerPlayerEntity> participants) {
+	private MdActive(GameSpace world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig, PlayerSet participants) {
 		this.world = world;
 		this.map = map;
 		this.config = config;
@@ -82,8 +83,8 @@ public class MdActive {
 		this.difficultyNoise = new OpenSimplexNoise(world.getWorld().getRandom().nextLong());
 	}
 
-	public static void open(GameWorld world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig) {
-		MdActive active = new MdActive(world, map, config, worldConfig, new HashSet<>(world.getPlayers()));
+	public static void open(GameSpace world, MdMap map, MdConfig config, BubbleWorldConfig worldConfig) {
+		MdActive active = new MdActive(world, map, config, worldConfig, world.getPlayers());
 
 		world.openGame(game -> {
 			game.setRule(GameRule.CRAFTING, RuleResult.DENY);
